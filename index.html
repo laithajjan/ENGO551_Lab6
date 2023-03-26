@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+        integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+        crossorigin="">
+
+    <!-- Turf.js -->
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+
+    <title>Calgary BP Search</title>
+
+    <style>
+        * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        text-align: center;
+        background-color: #f5f5f5;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #ffffff;
+        padding: 20px;
+        margin-bottom: 30px;
+        background-color: #3f51b5;
+    }
+
+    #map {
+        width: 80%;
+        max-width: 800px;
+        height: 600px;
+        margin: 40px auto;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+
+    button {
+        font-size: 1rem;
+        background-color: #4caf50;
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        margin: 0 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #66bb6a;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+    .leaflet-popup {
+    font-family: 'Roboto', sans-serif;
+    background-color: rgba(63, 81, 181, 0.8);
+    border-radius: 5px;
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.leaflet-popup-content-wrapper {
+    padding: 8px 12px;
+}
+
+.leaflet-popup-tip-container {
+    display: none;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <h1>ENGO 551 Lab 6</h1>
+
+    <button id="clear">Clear Polyline</button>
+    <button id="simplify">Simplify Polyline</button>
+
+    <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+        integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+        crossorigin=""></script>
+    <script src="https://unpkg.com/@turf/turf@5.1.6/turf.min.js"></script>
+
+    <div id="map"></div>
+
+    <script>
+        const calgary = [51.0447, -114.0719];
+        const map = new L.map('map').setView(calgary, 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy;<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
+        }).addTo(map);
+
+        let lngLat = [];
+        let latLng = [];
+
+        let simplifiedLayer = L.geoJSON().addTo(map);
+        let marker;
+
+        function onMapClick(e) {
+            lngLat.push([e.latlng.lng, e.latlng.lat]);
+            latLng.push([e.latlng.lat, e.latlng.lng]);
+
+            const popup = L.popup({ offset: new L.Point(0, -30) })
+                .setLatLng(e.latlng)
+                .setContent("Point " + latLng[latLng.length - 1] + " has been added to your polyline")
+                .openOn(map);
+
+            if (marker !== undefined) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(e.latlng).addTo(map);
+
+            map.removeLayer(simplifiedLayer);
+
+            const polyline = turf.lineString(lngLat);
+            simplifiedLayer = L.geoJSON(polyline).addTo(map);
+        }
+
+        document.getElementById('simplify').onclick = function () {
+            map.removeLayer(simplifiedLayer);
+            map.closePopup();
+
+            const options = { tolerance: 0.01, highQuality:false };
+const polyline = turf.lineString(lngLat);
+const simplifiedPolyline = turf.simplify(polyline, options);
+simplifiedLayer = L.geoJSON(simplifiedPolyline, {
+style: function () {
+return { color: 'red' };
+}
+}).addTo(map);
+};
+    document.getElementById('clear').onclick = function () {
+        map.closePopup();
+        map.removeLayer(simplifiedLayer);
+        lngLat = [];
+        latLng = [];
+    };
+
+    map.on('click', onMapClick);
+
+</script>
+</body>
+</html>
